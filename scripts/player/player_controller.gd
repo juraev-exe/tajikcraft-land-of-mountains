@@ -29,6 +29,12 @@ var third_person_camera: Camera3D = Camera3D.new()
 var interaction_ray: RayCast3D = RayCast3D.new()
 var hand_item_mesh: MeshInstance3D = MeshInstance3D.new()
 var avatar_root: Node3D = Node3D.new()
+var avatar_head_pivot: Node3D = Node3D.new()
+var avatar_arm_l: Node3D = Node3D.new()
+var avatar_arm_r: Node3D = Node3D.new()
+var avatar_leg_l: Node3D = Node3D.new()
+var avatar_leg_r: Node3D = Node3D.new()
+var avatar_hand_item: MeshInstance3D = MeshInstance3D.new()
 var torch_light: OmniLight3D = OmniLight3D.new()
 
 var survival_stats: SurvivalStats = SurvivalStats.new()
@@ -114,57 +120,113 @@ func _build_3rd_person_avatar() -> void:
 	avatar_root.visible = false # Hidden in 1st person, shown in F5 3rd person
 	add_child(avatar_root)
 
-	# Chapan Tunic Torso
-	var torso = MeshInstance3D.new()
-	var torso_box = BoxMesh.new()
-	torso_box.size = Vector3(0.55, 0.72, 0.30)
-	var mat_chapan = StandardMaterial3D.new()
-	mat_chapan.albedo_texture = TextureGenerator.get_tile_atlas_texture(115)
+	# Generate solid full-bleed procedural Chapan & Toki textures (no alpha holes)
+	var chapan_img := Image.create(16, 16, false, Image.FORMAT_RGBA8)
+	for py in range(16):
+		for px in range(16):
+			var stripe: Color = Color(0.14, 0.34, 0.48)
+			if px in [3, 4, 11, 12]:
+				stripe = Color(0.76, 0.22, 0.20)
+			elif px in [7, 8]:
+				stripe = Color(0.88, 0.68, 0.22)
+			if py >= 10 and py <= 12:
+				stripe = Color(0.82, 0.28, 0.22) # Miyonband waist sash
+			chapan_img.set_pixel(px, py, stripe)
+	var tex_chapan := ImageTexture.create_from_image(chapan_img)
+
+	var toki_img := Image.create(16, 16, false, Image.FORMAT_RGBA8)
+	for py in range(16):
+		for px in range(16):
+			var is_pat: bool = (py in [6, 9] and (px % 3 == 0)) or (py in [7, 8] and ((px + 1) % 3 == 0))
+			toki_img.set_pixel(px, py, Color(0.95, 0.95, 0.96) if is_pat else Color(0.10, 0.12, 0.15))
+	var tex_toki := ImageTexture.create_from_image(toki_img)
+
+	var mat_chapan := StandardMaterial3D.new()
+	mat_chapan.albedo_texture = tex_chapan
 	mat_chapan.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
+
+	var mat_toki := StandardMaterial3D.new()
+	mat_toki.albedo_texture = tex_toki
+	mat_toki.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
+
+	var mat_skin := StandardMaterial3D.new()
+	mat_skin.albedo_color = Color(0.88, 0.72, 0.58)
+
+	var mat_pants := StandardMaterial3D.new()
+	mat_pants.albedo_color = Color(0.16, 0.20, 0.26)
+
+	# Minecraft-proportioned Torso
+	var torso := MeshInstance3D.new()
+	var torso_box := BoxMesh.new()
+	torso_box.size = Vector3(0.50, 0.75, 0.25)
 	torso_box.material = mat_chapan
 	torso.mesh = torso_box
-	torso.position = Vector3(0, 1.05, 0)
+	torso.position = Vector3(0, 1.125, 0)
 	avatar_root.add_child(torso)
 
-	# Head
-	var head_m = MeshInstance3D.new()
-	var head_box = BoxMesh.new()
-	head_box.size = Vector3(0.42, 0.42, 0.42)
-	var mat_skin = StandardMaterial3D.new()
-	mat_skin.albedo_color = Color(0.88, 0.72, 0.58)
+	# Neck-pivoted Head + Embroidered Toki Cap
+	avatar_head_pivot.position = Vector3(0, 1.50, 0)
+	avatar_root.add_child(avatar_head_pivot)
+
+	var head_m := MeshInstance3D.new()
+	var head_box := BoxMesh.new()
+	head_box.size = Vector3(0.50, 0.50, 0.50)
 	head_box.material = mat_skin
 	head_m.mesh = head_box
-	head_m.position = Vector3(0, 1.62, 0)
-	avatar_root.add_child(head_m)
+	head_m.position = Vector3(0, 0.25, 0)
+	avatar_head_pivot.add_child(head_m)
 
-	# Traditional Embroidered Toki Skullcap
-	var toki = MeshInstance3D.new()
-	var toki_box = BoxMesh.new()
-	toki_box.size = Vector3(0.46, 0.16, 0.46)
-	var mat_toki = StandardMaterial3D.new()
-	mat_toki.albedo_texture = TextureGenerator.get_tile_atlas_texture(114)
-	mat_toki.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
+	var toki := MeshInstance3D.new()
+	var toki_box := BoxMesh.new()
+	toki_box.size = Vector3(0.54, 0.16, 0.54)
 	toki_box.material = mat_toki
 	toki.mesh = toki_box
-	toki.position = Vector3(0, 1.88, 0)
-	avatar_root.add_child(toki)
+	toki.position = Vector3(0, 0.52, 0)
+	avatar_head_pivot.add_child(toki)
 
-	# Legs
-	var leg_box = BoxMesh.new()
-	leg_box.size = Vector3(0.22, 0.68, 0.24)
-	var mat_pants = StandardMaterial3D.new()
-	mat_pants.albedo_color = Color(0.18, 0.22, 0.28)
+	# Shoulder-pivoted Arms
+	avatar_arm_l.position = Vector3(-0.375, 1.42, 0)
+	avatar_arm_r.position = Vector3(0.375, 1.42, 0)
+	avatar_root.add_child(avatar_arm_l)
+	avatar_root.add_child(avatar_arm_r)
+
+	var arm_box := BoxMesh.new()
+	arm_box.size = Vector3(0.24, 0.72, 0.24)
+	arm_box.material = mat_chapan
+
+	var arm_l_m := MeshInstance3D.new()
+	arm_l_m.mesh = arm_box
+	arm_l_m.position = Vector3(0, -0.30, 0)
+	avatar_arm_l.add_child(arm_l_m)
+
+	var arm_r_m := MeshInstance3D.new()
+	arm_r_m.mesh = arm_box
+	arm_r_m.position = Vector3(0, -0.30, 0)
+	avatar_arm_r.add_child(arm_r_m)
+
+	avatar_hand_item.position = Vector3(0, -0.62, -0.18)
+	avatar_hand_item.scale = Vector3(0.32, 0.32, 0.32)
+	avatar_arm_r.add_child(avatar_hand_item)
+
+	# Hip-pivoted Legs
+	avatar_leg_l.position = Vector3(-0.125, 0.75, 0)
+	avatar_leg_r.position = Vector3(0.125, 0.75, 0)
+	avatar_root.add_child(avatar_leg_l)
+	avatar_root.add_child(avatar_leg_r)
+
+	var leg_box := BoxMesh.new()
+	leg_box.size = Vector3(0.24, 0.75, 0.24)
 	leg_box.material = mat_pants
 
-	var leg_l = MeshInstance3D.new()
-	leg_l.mesh = leg_box
-	leg_l.position = Vector3(-0.14, 0.34, 0)
-	avatar_root.add_child(leg_l)
+	var leg_l_m := MeshInstance3D.new()
+	leg_l_m.mesh = leg_box
+	leg_l_m.position = Vector3(0, -0.375, 0)
+	avatar_leg_l.add_child(leg_l_m)
 
-	var leg_r = MeshInstance3D.new()
-	leg_r.mesh = leg_box
-	leg_r.position = Vector3(0.14, 0.34, 0)
-	avatar_root.add_child(leg_r)
+	var leg_r_m := MeshInstance3D.new()
+	leg_r_m.mesh = leg_box
+	leg_r_m.position = Vector3(0, -0.375, 0)
+	avatar_leg_r.add_child(leg_r_m)
 
 func _unhandled_input(event: InputEvent) -> void:
 	if GameManager.is_game_paused or survival_stats.is_dead:
@@ -501,16 +563,27 @@ func _trigger_swing() -> void:
 		tool_swung.emit()
 
 func _animate_hand(delta: float) -> void:
+	var walk_mag: float = clamp(Vector2(velocity.x, velocity.z).length() / WALK_SPEED, 0.0, 1.4)
+	var t_sec: float = Time.get_ticks_msec() * 0.010
+	var limb_swing: float = sin(t_sec) * 0.65 * walk_mag
+
+	avatar_head_pivot.rotation.x = head.rotation.x * 0.65
+	avatar_leg_l.rotation.x = limb_swing
+	avatar_leg_r.rotation.x = -limb_swing
+	avatar_arm_l.rotation.x = -limb_swing * 0.85
+
 	if swing_timer > 0.0:
 		swing_timer -= delta
 		var progress: float = 1.0 - (swing_timer / 0.22)
 		var swing_offset: float = sin(progress * PI) * 0.25
 		hand_item_mesh.position = Vector3(0.35 - swing_offset * 0.5, -0.3 + swing_offset * 0.4, -0.6 - swing_offset)
 		hand_item_mesh.rotation = Vector3(-swing_offset * 1.5, swing_offset * 1.2, -swing_offset * 0.5)
+		avatar_arm_r.rotation.x = -1.1 - swing_offset * 3.2
 	else:
 		var bob: float = sin(Time.get_ticks_msec() * 0.003) * 0.015
 		hand_item_mesh.position = Vector3(0.35, -0.3 + bob, -0.6)
 		hand_item_mesh.rotation = Vector3.ZERO
+		avatar_arm_r.rotation.x = limb_swing * 0.85
 
 func _on_hotbar_selection_changed(_slot_idx: int) -> void:
 	_update_hand_model()
@@ -519,6 +592,7 @@ func _update_hand_model() -> void:
 	var active = inventory.get_active_item()
 	if active["id"] == 0:
 		hand_item_mesh.mesh = null
+		avatar_hand_item.mesh = null
 		return
 
 	var box = BoxMesh.new()
@@ -536,3 +610,4 @@ func _update_hand_model() -> void:
 	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
 	box.material = mat
 	hand_item_mesh.mesh = box
+	avatar_hand_item.mesh = box

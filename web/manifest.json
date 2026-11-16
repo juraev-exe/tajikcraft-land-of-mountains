@@ -1,0 +1,19 @@
+{
+  "name": "TajikCraft: Land of Mountains (ТоҷикКрафт)",
+  "short_name": "TajikCraft",
+  "description": "3D voxel survival and cultural exploration game set across the 8 biomes of Tajikistan.",
+  "start_url": "./index.html",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#12110f",
+  "theme_color": "#12110f",
+  "categories": ["games", "adventure", "simulation"],
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

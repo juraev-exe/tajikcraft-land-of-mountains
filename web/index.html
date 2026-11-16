@@ -2,9 +2,13 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#12110f">
   <title>TajikCraft — Land of Mountains (ТоҷикКрафт)</title>
   <link rel="icon" type="image/svg+xml" href="icon.svg">
+  <link rel="manifest" href="manifest.json">
   <style>
     :root {
       --bg-deep: #12110f;
@@ -38,6 +42,8 @@
       font-size: 14px;
       line-height: 20px;
       -webkit-font-smoothing: antialiased;
+      touch-action: none;
+      overscroll-behavior: none;
     }
     #canvas-container { width: 100%; height: 100%; position: absolute; left: 0; top: 0; }
 
@@ -389,6 +395,136 @@
       font-family: var(--font-sans); font-size: 13px;
     }
 
+    /* Active Quest Tracker Card */
+    #quest-tracker {
+      position: absolute; left: 24px; top: 156px; z-index: 10;
+      padding: 12px 16px; border-radius: 12px;
+      width: 264px; display: flex; flex-direction: column; gap: 6px;
+      cursor: pointer;
+      transition: border-color 140ms var(--ease-out), transform 100ms ease-out;
+    }
+    #quest-tracker:hover { border-color: var(--border-strong); }
+    #quest-tracker:active { transform: scale(0.98); }
+    .quest-eyebrow {
+      display: flex; justify-content: space-between; align-items: center;
+      font-family: var(--font-mono); font-size: 11px; line-height: 16px;
+      color: var(--accent); font-weight: 500;
+    }
+    #quest-active-title {
+      font-size: 13px; line-height: 18px; font-weight: 500; color: var(--text-primary);
+    }
+    #quest-active-desc {
+      font-size: 12px; line-height: 16px; color: var(--text-secondary);
+    }
+    .quest-bar-bg {
+      width: 100%; height: 4px; background: var(--bg-deep);
+      border-radius: 4px; overflow: hidden; margin-top: 2px;
+    }
+    #quest-bar-fill {
+      height: 100%; width: 0%; background: var(--accent);
+      transition: width 180ms var(--ease-out);
+    }
+
+    /* Quests Modal */
+    #quests-modal { width: 560px; max-height: 520px; display: none; }
+    .quest-list {
+      display: flex; flex-direction: column; gap: 8px;
+      max-height: 380px; overflow-y: auto; padding-right: 4px;
+    }
+    .quest-card {
+      background: var(--bg-raised); padding: 12px 16px; border-radius: 8px;
+      border: 1px solid var(--border-hairline);
+      display: flex; justify-content: space-between; align-items: center; gap: 16px;
+    }
+    .quest-card.done { border-color: rgba(76, 195, 138, 0.35); }
+    .quest-badge {
+      font-family: var(--font-mono); font-size: 11px; line-height: 16px;
+      padding: 4px 8px; border-radius: 4px;
+      background: var(--bg-deep); color: var(--text-secondary);
+      border: 1px solid var(--border-hairline);
+      white-space: nowrap; font-variant-numeric: tabular-nums;
+    }
+    .quest-badge.done { color: var(--positive); border-color: rgba(76, 195, 138, 0.35); }
+
+    /* Minecraft-style XP Level & Mining Progress Bar */
+    .xp-row {
+      display: flex; align-items: center; gap: 8px;
+      width: 508px; max-width: 92vw;
+    }
+    .xp-badge {
+      font-family: var(--font-mono); font-size: 11px; line-height: 16px; font-weight: 600;
+      color: var(--positive); background: var(--bg-panel);
+      padding: 2px 8px; border-radius: 4px; border: 1px solid var(--border-hairline);
+      font-variant-numeric: tabular-nums;
+    }
+    .xp-track {
+      flex: 1; height: 6px; background: var(--bg-panel);
+      border-radius: 4px; overflow: hidden; border: 1px solid var(--border-hairline);
+    }
+    #xp-fill {
+      height: 100%; width: 20%; background: var(--positive);
+      transition: width 180ms var(--ease-out);
+    }
+    #mining-bar-wrap {
+      width: 140px; height: 6px; background: var(--bg-panel);
+      border-radius: 4px; overflow: hidden; border: 1px solid var(--border-strong);
+      display: none;
+    }
+    #mining-bar-fill {
+      height: 100%; width: 0%; background: var(--accent);
+    }
+
+    /* Mobile & Play Store / Yandex Touch Controls */
+    #touch-controls {
+      position: absolute; left: 0; top: 0; width: 100%; height: 100%;
+      pointer-events: none; z-index: 30; display: none;
+    }
+    #joystick-zone {
+      position: absolute; left: 24px; bottom: 28px;
+      width: 128px; height: 128px; border-radius: 64px;
+      background: rgba(22, 21, 19, 0.55);
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--border-strong);
+      pointer-events: auto; touch-action: none;
+    }
+    #joystick-knob {
+      position: absolute; left: 40px; top: 40px;
+      width: 48px; height: 48px; border-radius: 24px;
+      background: rgba(239, 233, 222, 0.85);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+      pointer-events: none;
+    }
+    #touch-actions {
+      position: absolute; right: 24px; bottom: 28px;
+      display: grid; grid-template-columns: repeat(2, 60px); gap: 8px;
+      pointer-events: auto;
+    }
+    .touch-btn {
+      width: 60px; height: 52px; border-radius: 12px;
+      background: rgba(22, 21, 19, 0.72);
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--border-strong);
+      color: var(--text-primary);
+      font-family: var(--font-sans); font-size: 12px; font-weight: 500;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; touch-action: none;
+      transition: transform 80ms ease-out, background-color 120ms var(--ease-out);
+    }
+    .touch-btn:active { transform: scale(0.93); background: var(--bg-raised-hover); }
+
+    @media (max-width: 900px) {
+      #info-overlay { left: 12px; top: 12px; padding: 8px 12px; min-width: 210px; }
+      #quest-tracker { left: 12px; top: 132px; width: 210px; padding: 8px 12px; }
+      #top-actions { right: 12px; top: 12px; gap: 4px; }
+      .mini-btn kbd { display: none; }
+      .bars-row { gap: 8px; padding: 6px 12px; }
+      .bar-wrap { width: 88px; }
+      .slot { width: 44px; height: 44px; }
+      #inventory-modal, #map-modal, #quests-modal, #settings-modal { width: 94vw; max-height: 88vh; overflow-y: auto; }
+      .modal-layout { flex-direction: column; }
+      .craft-side { border-left: none; border-top: 1px solid var(--border-hairline); padding-left: 0; padding-top: 16px; }
+    }
+
     /* Accessibility & Apple Reduced Motion / Transparency */
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after {
@@ -425,16 +561,38 @@
     <div class="telemetry-row"><span id="ui-mode-lbl">Mode &amp; frame rate</span> <b><span id="val-mode">Survival</span> · <span id="val-fps">60</span> fps</b></div>
   </div>
 
+  <!-- Active Quest Tracker -->
+  <div id="quest-tracker" class="surface-glass" onclick="toggleQuests()">
+    <div class="quest-eyebrow"><span>Silk Road quest</span> <kbd>Q</kbd></div>
+    <div id="quest-active-title">1. Mountain forester</div>
+    <div id="quest-active-desc">Gather wood or craft wooden planks (0/3)</div>
+    <div class="quest-bar-bg"><div id="quest-bar-fill"></div></div>
+  </div>
+
   <!-- Top-right quick buttons -->
   <div id="top-actions">
+    <button class="mini-btn" id="btn-top-quests" onclick="toggleQuests()"><span>Quests</span> <kbd>Q</kbd></button>
     <button class="mini-btn" id="btn-top-map" onclick="toggleMap()"><span>Map</span> <kbd>M</kbd></button>
     <button class="mini-btn" id="btn-top-craft" onclick="toggleInventory('crafting_table')"><span>Backpack</span> <kbd>Tab</kbd></button>
     <button class="mini-btn" id="btn-top-weather" onclick="cycleWeather()"><span>Weather</span> <kbd>V</kbd></button>
+    <button class="mini-btn" id="btn-top-touch" onclick="toggleTouchUI()"><span>Touch</span></button>
     <button class="mini-btn" id="btn-top-settings" onclick="toggleSettings()"><span>Settings</span> <kbd>P</kbd></button>
+  </div>
+
+  <!-- Mobile / Play Store Virtual Touch Controls -->
+  <div id="touch-controls">
+    <div id="joystick-zone"><div id="joystick-knob"></div></div>
+    <div id="touch-actions">
+      <button class="touch-btn" id="tbtn-jump">Jump</button>
+      <button class="touch-btn" id="tbtn-mine">Mine</button>
+      <button class="touch-btn" id="tbtn-use">Use / Place</button>
+      <button class="touch-btn" id="tbtn-cam">Camera F5</button>
+    </div>
   </div>
 
   <!-- Bottom Survival HUD -->
   <div id="hud-bottom">
+    <div id="mining-bar-wrap"><div id="mining-bar-fill"></div></div>
     <div id="held-label">Wooden Pickaxe</div>
     <div class="bars-row surface-glass">
       <div class="bar-wrap">
@@ -450,6 +608,10 @@
         <div class="bar-bg"><div id="stamina-fill" class="bar-fill"></div></div>
       </div>
       <div id="temp-label">36.6°C · Comfortable</div>
+    </div>
+    <div class="xp-row">
+      <span class="xp-badge" id="xp-level-lbl">Lv 1</span>
+      <div class="xp-track"><div id="xp-fill"></div></div>
     </div>
     <div id="hotbar" class="surface-glass"></div>
   </div>
@@ -498,6 +660,16 @@
         <div id="crafting-list" class="craft-list"></div>
       </div>
     </div>
+  </div>
+
+  <!-- Quests & Achievements Modal -->
+  <div id="quests-modal" class="game-panel">
+    <div class="panel-header">
+      <h3>Silk Road quests &amp; achievements</h3>
+      <button class="mini-btn" onclick="toggleQuests()"><span>Close</span> <kbd>Q</kbd></button>
+    </div>
+    <p class="panel-sub">Complete Tajik cultural and survival milestones to earn XP levels and expedition rewards</p>
+    <div id="quests-list-container" class="quest-list"></div>
   </div>
 
   <!-- Exploration Map & Fast-Travel Modal -->
@@ -976,41 +1148,182 @@
       }
     }
 
-    // --- 1ST PERSON HAND ITEM & 3RD PERSON EXPLORER AVATAR ---
+    // --- 1ST PERSON HAND ITEM & 3RD PERSON MINECRAFT TAJIK CHARACTER RIG ---
+    function makePixelTex(drawFn) {
+      const c = document.createElement('canvas');
+      c.width = 16; c.height = 16;
+      const ctx = c.getContext('2d');
+      drawFn(ctx);
+      const tex = new THREE.CanvasTexture(c);
+      tex.magFilter = THREE.NearestFilter;
+      tex.minFilter = THREE.NearestFilter;
+      return new THREE.MeshLambertMaterial({ map: tex });
+    }
+
+    const matSkinPlain = makePixelTex(ctx => {
+      ctx.fillStyle = '#e0b187'; ctx.fillRect(0, 0, 16, 16);
+      ctx.fillStyle = '#382516'; ctx.fillRect(0, 0, 16, 3);
+    });
+    const matFaceFront = makePixelTex(ctx => {
+      ctx.fillStyle = '#e0b187'; ctx.fillRect(0, 0, 16, 16);
+      ctx.fillStyle = '#2b1d12'; ctx.fillRect(0, 0, 16, 3); // Hairline
+      ctx.fillStyle = '#2b1d12'; ctx.fillRect(2, 5, 4, 1); ctx.fillRect(10, 5, 4, 1); // Eyebrows
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(2, 6, 4, 2); ctx.fillRect(10, 6, 4, 2); // Sclera
+      ctx.fillStyle = '#1f1916'; ctx.fillRect(4, 6, 2, 2); ctx.fillRect(10, 6, 2, 2); // Pupils
+      ctx.fillStyle = '#c69065'; ctx.fillRect(7, 8, 2, 2); // Nose
+      ctx.fillStyle = '#382516'; ctx.fillRect(5, 11, 6, 1); ctx.fillRect(6, 12, 4, 1); // Mustache & smile
+    });
+    const matToki = makePixelTex(ctx => {
+      ctx.fillStyle = '#15181e'; ctx.fillRect(0, 0, 16, 16);
+      ctx.fillStyle = '#f2efe9';
+      for (let x = 1; x < 15; x += 4) {
+        ctx.fillRect(x, 6, 2, 4);
+        ctx.fillStyle = '#d99b43'; ctx.fillRect(x + 2, 7, 1, 2); ctx.fillStyle = '#f2efe9';
+      }
+      ctx.fillRect(0, 13, 16, 1);
+    });
+    const matChapanTorso = makePixelTex(ctx => {
+      const cols = ['#1b4d6b', '#1b4d6b', '#b8322a', '#e0a82e', '#1b4d6b', '#276749', '#b8322a', '#1b4d6b'];
+      for (let x = 0; x < 16; x++) {
+        ctx.fillStyle = cols[Math.floor(x / 2) % cols.length];
+        ctx.fillRect(x, 0, 1, 16);
+      }
+      ctx.fillStyle = '#f4f1ea'; ctx.fillRect(6, 0, 4, 4); // Inner shirt V-neck
+      ctx.fillStyle = '#12110f'; ctx.fillRect(7, 4, 2, 12); // Coat center opening
+      ctx.fillStyle = '#c53030'; ctx.fillRect(0, 10, 16, 3); // Miyonband waist sash
+      ctx.fillStyle = '#ecc94b'; ctx.fillRect(0, 11, 16, 1);
+    });
+    const matChapanMerchant = makePixelTex(ctx => {
+      const cols = ['#742a2a', '#9b2c2c', '#d69e2e', '#742a2a', '#2c5282', '#d69e2e', '#9b2c2c', '#742a2a'];
+      for (let x = 0; x < 16; x++) {
+        ctx.fillStyle = cols[Math.floor(x / 2) % cols.length];
+        ctx.fillRect(x, 0, 1, 16);
+      }
+      ctx.fillStyle = '#ecc94b'; ctx.fillRect(0, 10, 16, 3);
+    });
+    const matChapanArm = makePixelTex(ctx => {
+      ctx.fillStyle = '#1b4d6b'; ctx.fillRect(0, 0, 16, 12);
+      ctx.fillStyle = '#b8322a'; ctx.fillRect(4, 0, 3, 12); ctx.fillRect(10, 0, 3, 12);
+      ctx.fillStyle = '#d99b43'; ctx.fillRect(0, 11, 16, 1);
+      ctx.fillStyle = '#e0b187'; ctx.fillRect(0, 12, 16, 4); // Voxel hand at bottom of sleeve
+    });
+    const matPants = makePixelTex(ctx => {
+      ctx.fillStyle = '#232933'; ctx.fillRect(0, 0, 16, 12);
+      ctx.fillStyle = '#3b2818'; ctx.fillRect(0, 12, 16, 4); // Mountain boots
+    });
+
     const handGroup = new THREE.Group();
     handGroup.position.set(0.45, -0.35, -0.7);
     camera.add(handGroup);
     let handMesh = null;
+    const fpArmMesh = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.52, 0.18), matChapanArm);
+    fpArmMesh.position.set(0.10, -0.18, 0.12);
+    fpArmMesh.rotation.set(-0.65, 0.2, 0.15);
+    handGroup.add(fpArmMesh);
 
     const explorerAvatar = new THREE.Group();
     explorerAvatar.visible = false;
     scene.add(explorerAvatar);
-    let avatarLegL = null, avatarLegR = null, avatarArmL = null, avatarArmR = null;
+    let avatarHeadPivot = null, avatarTorso = null;
+    let avatarLegL = null, avatarLegR = null, avatarArmL = null, avatarArmR = null, avatarHandMount = null;
+
+    function buildMinecraftCharacterRig(targetGroup, isMerchant = false) {
+      const torsoMat = isMerchant ? matChapanMerchant : matChapanTorso;
+      const torso = new THREE.Mesh(new THREE.BoxGeometry(0.50, 0.75, 0.25), torsoMat);
+      torso.position.y = 1.125;
+      torso.castShadow = true;
+      targetGroup.add(torso);
+
+      const headPivot = new THREE.Group();
+      headPivot.position.set(0, 1.50, 0);
+      targetGroup.add(headPivot);
+
+      // 6-face array for BoxGeometry: +X, -X, +Y, -Y, +Z (back), -Z (front in -Z forward coords)
+      const headMaterials = [matSkinPlain, matSkinPlain, matSkinPlain, matSkinPlain, matSkinPlain, matFaceFront];
+      const head = new THREE.Mesh(new THREE.BoxGeometry(0.50, 0.50, 0.50), headMaterials);
+      head.position.y = 0.25;
+      head.castShadow = true;
+      headPivot.add(head);
+
+      const toki = new THREE.Mesh(new THREE.BoxGeometry(0.54, 0.16, 0.54), matToki);
+      toki.position.y = 0.52;
+      headPivot.add(toki);
+
+      const armLPivot = new THREE.Group();
+      armLPivot.position.set(-0.375, 1.42, 0);
+      const armLM = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.72, 0.24), matChapanArm);
+      armLM.position.y = -0.30;
+      armLM.castShadow = true;
+      armLPivot.add(armLM);
+      targetGroup.add(armLPivot);
+
+      const armRPivot = new THREE.Group();
+      armRPivot.position.set(0.375, 1.42, 0);
+      const armRM = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.72, 0.24), matChapanArm);
+      armRM.position.y = -0.30;
+      armRM.castShadow = true;
+      armRPivot.add(armRM);
+      targetGroup.add(armRPivot);
+
+      const handMount = new THREE.Group();
+      handMount.position.set(0, -0.58, -0.18);
+      armRPivot.add(handMount);
+
+      const legLPivot = new THREE.Group();
+      legLPivot.position.set(-0.125, 0.75, 0);
+      const legLM = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.75, 0.24), matPants);
+      legLM.position.y = -0.375;
+      legLM.castShadow = true;
+      legLPivot.add(legLM);
+      targetGroup.add(legLPivot);
+
+      const legRPivot = new THREE.Group();
+      legRPivot.position.set(0.125, 0.75, 0);
+      const legRM = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.75, 0.24), matPants);
+      legRM.position.y = -0.375;
+      legRM.castShadow = true;
+      legRPivot.add(legRM);
+      targetGroup.add(legRPivot);
+
+      return { torso, headPivot, armLPivot, armRPivot, legLPivot, legRPivot, handMount };
+    }
+
     (function buildExplorerAvatar() {
-      const chapan = new THREE.Mesh(createTexturedBoxGeo(0.54, 0.72, 0.28, 115), entityAtlasMaterial);
-      chapan.position.y = 1.04;
-      explorerAvatar.add(chapan);
-      const head = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.42, 0.42), new THREE.MeshLambertMaterial({ color: 0xe2b894 }));
-      head.position.y = 1.61;
-      explorerAvatar.add(head);
-      const toki = new THREE.Mesh(createTexturedBoxGeo(0.46, 0.16, 0.46, 114), entityAtlasMaterial);
-      toki.position.y = 1.87;
-      explorerAvatar.add(toki);
-      const armGeo = createTexturedBoxGeo(0.18, 0.64, 0.20, 115);
-      avatarArmL = new THREE.Mesh(armGeo, entityAtlasMaterial);
-      avatarArmL.position.set(-0.37, 1.04, 0);
-      explorerAvatar.add(avatarArmL);
-      avatarArmR = new THREE.Mesh(armGeo, entityAtlasMaterial);
-      avatarArmR.position.set(0.37, 1.04, 0);
-      explorerAvatar.add(avatarArmR);
-      const legMat = new THREE.MeshLambertMaterial({ color: 0x263238 });
-      avatarLegL = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.68, 0.24), legMat);
-      avatarLegL.position.set(-0.14, 0.34, 0);
-      explorerAvatar.add(avatarLegL);
-      avatarLegR = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.68, 0.24), legMat);
-      avatarLegR.position.set(0.14, 0.34, 0);
-      explorerAvatar.add(avatarLegR);
+      const rig = buildMinecraftCharacterRig(explorerAvatar, false);
+      avatarTorso = rig.torso;
+      avatarHeadPivot = rig.headPivot;
+      avatarArmL = rig.armLPivot;
+      avatarArmR = rig.armRPivot;
+      avatarLegL = rig.legLPivot;
+      avatarLegR = rig.legRPivot;
+      avatarHandMount = rig.handMount;
     })();
+
+    // 3D Block Mining Crack Overlay Box & Dropped Item Entities
+    const crackBoxGeo = new THREE.BoxGeometry(1.012, 1.012, 1.012);
+    const crackBoxMat = new THREE.MeshBasicMaterial({ color: 0x12110f, wireframe: true, transparent: true, opacity: 0.0 });
+    const crackBoxMesh = new THREE.Mesh(crackBoxGeo, crackBoxMat);
+    crackBoxMesh.visible = false;
+    scene.add(crackBoxMesh);
+
+    const droppedItems = [];
+    function spawnDroppedItem(wx, wy, wz, id, count, is_block) {
+      const tile = is_block
+        ? ((BLOCK_DEFS[id] || {}).side !== undefined ? BLOCK_DEFS[id].side : ((BLOCK_DEFS[id] || {}).top || 0))
+        : ((ITEM_DEFS[id] || {}).tile || 83);
+      const geo = is_block ? createTexturedBoxGeo(0.30, 0.30, 0.30, tile) : createTexturedBoxGeo(0.08, 0.32, 0.32, tile);
+      const mesh = new THREE.Mesh(geo, entityAtlasMaterial);
+      mesh.position.set(wx + 0.5, wy + 0.45, wz + 0.5);
+      mesh.castShadow = true;
+      scene.add(mesh);
+      droppedItems.push({
+        mesh, id, count, is_block,
+        vx: (Math.random() - 0.5) * 2.4,
+        vy: 3.6 + Math.random() * 1.4,
+        vz: (Math.random() - 0.5) * 2.4,
+        age: 0
+      });
+    }
 
     // --- VOXEL WORLD, 8 BIOMES, LANDMARKS & STREAMING ---
     const worldVoxels = new Map();
@@ -1607,41 +1920,43 @@
       else if (type === 'merchant') { coatTile = 115; name = "Silk Road Trader (Тоҷири Роҳи Абрешим)"; health = 60; }
 
       const isMerchant = (type === 'merchant');
-      const bodyGeo = fly
-        ? createTexturedBoxGeo(1.4, 0.18, 0.55, coatTile)
-        : (isMerchant ? createTexturedBoxGeo(0.54, 0.72, 0.30, 115) : createTexturedBoxGeo(0.7, 0.65, 1.15, coatTile));
-      const body = new THREE.Mesh(bodyGeo, entityAtlasMaterial);
-      body.position.y = fly ? 0 : (isMerchant ? 1.04 : 0.78);
-      group.add(body);
-
-      const head = new THREE.Mesh(
-        createTexturedBoxGeo(0.42, 0.42, isMerchant ? 0.42 : 0.48, isMerchant ? 114 : coatTile),
-        entityAtlasMaterial
-      );
-      head.position.set(0, fly ? 0.1 : (isMerchant ? 1.62 : 1.18), isMerchant ? 0 : -0.68);
-      group.add(head);
-
-      if (hasHorns) {
-        const horn = new THREE.Mesh(createTexturedBoxGeo(0.95, 0.25, 0.35, 140), entityAtlasMaterial);
-        horn.position.set(0, 1.48, -0.6);
-        group.add(horn);
-      }
-
       const legs = [];
-      if (!fly) {
-        const legGeo = createTexturedBoxGeo(0.18, 0.55, 0.18, coatTile);
-        [[-0.24, 0.28, -0.38], [0.24, 0.28, -0.38], [-0.24, 0.28, 0.38], [0.24, 0.28, 0.38]].forEach(p => {
-          const l = new THREE.Mesh(legGeo, entityAtlasMaterial);
-          l.position.set(p[0], p[1], p[2]);
-          group.add(l);
-          legs.push(l);
-        });
+      if (isMerchant) {
+        const mRig = buildMinecraftCharacterRig(group, true);
+        legs.push(mRig.legLPivot, mRig.legRPivot, mRig.armLPivot, mRig.armRPivot);
+      } else {
+        const bodyGeo = fly
+          ? createTexturedBoxGeo(1.4, 0.18, 0.55, coatTile)
+          : createTexturedBoxGeo(0.7, 0.65, 1.15, coatTile);
+        const body = new THREE.Mesh(bodyGeo, entityAtlasMaterial);
+        body.position.y = fly ? 0 : 0.78;
+        group.add(body);
+
+        const head = new THREE.Mesh(createTexturedBoxGeo(0.42, 0.42, 0.48, coatTile), entityAtlasMaterial);
+        head.position.set(0, fly ? 0.1 : 1.18, -0.68);
+        group.add(head);
+
+        if (hasHorns) {
+          const horn = new THREE.Mesh(createTexturedBoxGeo(0.95, 0.25, 0.35, 140), entityAtlasMaterial);
+          horn.position.set(0, 1.48, -0.6);
+          group.add(horn);
+        }
+
+        if (!fly) {
+          const legGeo = createTexturedBoxGeo(0.18, 0.55, 0.18, coatTile);
+          [[-0.24, 0.28, -0.38], [0.24, 0.28, -0.38], [-0.24, 0.28, 0.38], [0.24, 0.28, 0.38]].forEach(p => {
+            const l = new THREE.Mesh(legGeo, entityAtlasMaterial);
+            l.position.set(p[0], p[1], p[2]);
+            group.add(l);
+            legs.push(l);
+          });
+        }
       }
 
       group.position.set(x, y, z);
       group.userData = { animalRef: null };
       scene.add(group);
-      const animObj = { group, legs, type, name, health, fly, hostile, wanderTimer: 1.5, dx: 0, dz: 0, cooldown: 0 };
+      const animObj = { group, legs, type, name, health, fly, hostile, wanderTimer: 1.5, dx: 0, dz: 0, cooldown: 0, kbX: 0, kbZ: 0, hurtTimer: 0 };
       group.userData.animalRef = animObj;
       group.traverse(c => { c.userData.animalRef = animObj; });
       animals.push(animObj);
@@ -1724,23 +2039,36 @@
 
     function updateHandModel() {
       if (handMesh) { handGroup.remove(handMesh); handMesh = null; }
+      if (avatarHandMount) {
+        while (avatarHandMount.children.length > 0) avatarHandMount.remove(avatarHandMount.children[0]);
+      }
       const slot = inventorySlots[activeSlot];
       if (!slot || !slot.id) {
-        document.getElementById('held-label').innerText = "Empty Hand";
+        document.getElementById('held-label').innerText = "Empty hand";
+        fpArmMesh.visible = true;
         return;
       }
       const name = slot.is_block ? (BLOCK_DEFS[slot.id] || {}).name : (ITEM_DEFS[slot.id] || {}).name;
       document.getElementById('held-label').innerText = name || "Item";
 
+      let tpMesh = null;
       if (slot.is_block) {
+        fpArmMesh.visible = false;
         const tile = (BLOCK_DEFS[slot.id] || {}).side !== undefined ? BLOCK_DEFS[slot.id].side : (BLOCK_DEFS[slot.id].top || 0);
-        handMesh = new THREE.Mesh(createTexturedBoxGeo(0.28, 0.28, 0.28, tile), entityAtlasMaterial);
+        handMesh = new THREE.Mesh(createTexturedBoxGeo(0.30, 0.30, 0.30, tile), entityAtlasMaterial);
+        handMesh.rotation.set(0.15, Math.PI * 0.25, 0);
+        tpMesh = new THREE.Mesh(createTexturedBoxGeo(0.28, 0.28, 0.28, tile), entityAtlasMaterial);
       } else {
+        fpArmMesh.visible = true;
         const tile = (ITEM_DEFS[slot.id] || {}).tile || 83;
-        handMesh = new THREE.Mesh(createTexturedBoxGeo(0.05, 0.34, 0.34, tile), entityAtlasMaterial);
-        handMesh.rotation.y = Math.PI * 0.45;
+        handMesh = new THREE.Mesh(createTexturedBoxGeo(0.08, 0.38, 0.38, tile), entityAtlasMaterial);
+        handMesh.position.set(-0.04, 0.08, -0.12);
+        handMesh.rotation.set(-0.25, Math.PI * 0.45, 0.1);
+        tpMesh = new THREE.Mesh(createTexturedBoxGeo(0.08, 0.42, 0.42, tile), entityAtlasMaterial);
+        tpMesh.rotation.set(0.4, Math.PI * 0.5, 0);
       }
       handGroup.add(handMesh);
+      if (avatarHandMount && tpMesh) avatarHandMount.add(tpMesh);
     }
 
     function renderHotbar() {
@@ -1765,6 +2093,113 @@
       renderHotbar();
     }
 
+    // --- SILK ROAD QUESTS & XP SYSTEM ---
+    let playerXP = 20;
+    let playerLevel = 1;
+    const QUESTS = [
+      { id: 'wood', title: '1. Mountain forester · Чӯббури кӯҳистон', desc: 'Mine wood or craft wooden planks', progress: 0, goal: 3, done: false, xp: 60, rewardId: BLOCKS.TORCH, rewardCount: 4, rewardBlock: true },
+      { id: 'miner', title: '2. Miner of Badakhshan · Кӯҳкани Бадахшон', desc: 'Mine stone, coal, iron, lapis, or ruby blocks', progress: 0, goal: 4, done: false, xp: 90, rewardId: ITEMS.IRON_PICKAXE, rewardCount: 1, rewardBlock: false },
+      { id: 'baker', title: '3. Baker of the Pamirs · Нонпази Помир', desc: 'Use a Tandoor oven or eat warm Tajik bread', progress: 0, goal: 1, done: false, xp: 80, rewardId: ITEMS.SAMBUSA, rewardCount: 2, rewardBlock: false },
+      { id: 'rider', title: '4. Rider of the Roof of the World · Савора', desc: 'Mount a Karabair Horse or Pamir Yak with Right Click', progress: 0, goal: 1, done: false, xp: 100, rewardId: ITEMS.CHAPAN_COAT, rewardCount: 1, rewardBlock: false },
+      { id: 'trader', title: '5. Merchant of the Silk Road · Тоҷир', desc: 'Trade with the Silk Road Trader or open a Sanduq Chest', progress: 0, goal: 1, done: false, xp: 120, rewardId: ITEMS.OSHI_PALOV, rewardCount: 2, rewardBlock: false },
+      { id: 'music', title: '6. Master of Shashmaqom · Устоди Шашмақом', desc: 'Play a melody on the traditional Tajik Dutar or Rubab', progress: 0, goal: 1, done: false, xp: 150, rewardId: ITEMS.RUBY_GEM, rewardCount: 2, rewardBlock: false }
+    ];
+
+    function addPlayerXP(amt) {
+      playerXP += amt;
+      while (playerXP >= 100) {
+        playerXP -= 100;
+        playerLevel++;
+        playSound(440, 660, 0.22, 'triangle', 0.22);
+      }
+      document.getElementById('xp-level-lbl').innerText = `Lv ${playerLevel}`;
+      document.getElementById('xp-fill').style.width = `${playerXP}%`;
+    }
+
+    function updateQuestTrackerHUD() {
+      const active = QUESTS.find(q => !q.done) || QUESTS[QUESTS.length - 1];
+      document.getElementById('quest-active-title').innerText = active.done ? 'All Silk Road quests completed' : active.title;
+      document.getElementById('quest-active-desc').innerText = `${active.desc} (${active.progress}/${active.goal})`;
+      document.getElementById('quest-bar-fill').style.width = `${Math.min(100, (active.progress / active.goal) * 100)}%`;
+    }
+
+    function advanceQuest(qId, amt = 1) {
+      const q = QUESTS.find(item => item.id === qId);
+      if (!q || q.done) return;
+      q.progress = Math.min(q.goal, q.progress + amt);
+      if (q.progress >= q.goal) {
+        q.done = true;
+        addPlayerXP(q.xp);
+        addItemToInventory(q.rewardId, q.rewardCount, q.rewardBlock);
+        playSound(330, 587.33, 0.25, 'triangle', 0.24);
+        showBanner(`Quest completed: ${q.title} (+${q.xp} XP)`);
+      }
+      updateQuestTrackerHUD();
+    }
+
+    window.toggleQuests = function() {
+      const qm = document.getElementById('quests-modal');
+      const open = qm.style.display === 'block';
+      closeAllModals();
+      if (!open) {
+        tryExitPointerLock();
+        isLocked = false;
+        qm.style.display = 'block';
+        document.getElementById('click-blocker').style.display = 'none';
+        renderQuestsModal();
+      } else {
+        isLocked = true;
+        document.getElementById('click-blocker').style.display = 'none';
+        tryRequestPointerLock();
+      }
+    };
+
+    function renderQuestsModal() {
+      const containerEl = document.getElementById('quests-list-container');
+      containerEl.innerHTML = '';
+      QUESTS.forEach(q => {
+        const card = document.createElement('div');
+        card.className = 'quest-card' + (q.done ? ' done' : '');
+        card.innerHTML = `
+          <div>
+            <div style="font-weight: 500; color: var(--text-primary);">${q.title}</div>
+            <div style="font-size: 12px; color: var(--text-secondary); margin-top: 2px;">${q.desc} · Reward: +${q.xp} XP</div>
+          </div>
+          <span class="quest-badge ${q.done ? 'done' : ''}">${q.done ? 'Completed' : `${q.progress} / ${q.goal}`}</span>
+        `;
+        containerEl.appendChild(card);
+      });
+    }
+
+    // Gravity-affected Voxel Physics (Sand & Gravel fall into empty/water space below)
+    function applyGravityBlocksAround(wx, wz) {
+      let changed = false;
+      for (let dx = -1; dx <= 1; dx++) {
+        for (let dz = -1; dz <= 1; dz++) {
+          const cx = wx + dx, cz = wz + dz;
+          for (let y = 2; y < CHUNK_HEIGHT - 2; y++) {
+            const bId = getVoxelWorld(cx, y, cz);
+            if (bId === BLOCKS.SAND || bId === BLOCKS.GRAVEL) {
+              let targetY = y;
+              while (targetY > 1) {
+                const below = getVoxelWorld(cx, targetY - 1, cz);
+                if (below === BLOCKS.AIR || below === BLOCKS.WATER) targetY--;
+                else break;
+              }
+              if (targetY < y) {
+                forceVoxelWorld(cx, y, cz, BLOCKS.AIR);
+                modifiedBlocks[voxelKey(cx, y, cz)] = BLOCKS.AIR;
+                forceVoxelWorld(cx, targetY, cz, bId);
+                modifiedBlocks[voxelKey(cx, targetY, cz)] = bId;
+                changed = true;
+              }
+            }
+          }
+        }
+      }
+      if (changed) rebuildChunkAndNeighbors(wx, wz);
+    }
+
     // --- UI MODALS (INVENTORY, MAP, SETTINGS) ---
     function showBanner(msg) {
       const b = document.getElementById('discovery-banner');
@@ -1778,6 +2213,7 @@
       document.getElementById('inventory-modal').style.display = 'none';
       document.getElementById('map-modal').style.display = 'none';
       document.getElementById('settings-modal').style.display = 'none';
+      document.getElementById('quests-modal').style.display = 'none';
     }
 
     window.toggleInventory = function(station = 'crafting_table') {
@@ -1877,6 +2313,9 @@
         }
       }
       addItemToInventory(rec.id, rec.count, rec.is_block);
+      if (rec.id === BLOCKS.PLANKS) advanceQuest('wood', 1);
+      if (rec.station === 'tandoor') advanceQuest('baker', 1);
+      addPlayerXP(15);
       playSound(240, 320, 0.1, 'triangle', 0.2);
       renderInventoryGrid();
       renderCraftingRecipes();
@@ -2081,12 +2520,14 @@
       }
       if (e.code === 'Tab' || e.code === 'KeyI') { e.preventDefault(); toggleInventory(); }
       if (e.code === 'KeyM') { e.preventDefault(); toggleMap(); }
+      if (e.code === 'KeyQ' && !keys['ControlLeft']) { toggleQuests(); }
       if (e.code === 'KeyV') { cycleWeather(); }
       if (e.code === 'KeyP') { toggleSettings(); }
       if (e.code === 'KeyL') { toggleLanguage(); }
       if (e.code === 'Escape') {
         const anyModalOpen = document.getElementById('inventory-modal').style.display === 'block' ||
                              document.getElementById('map-modal').style.display === 'block' ||
+                             document.getElementById('quests-modal').style.display === 'block' ||
                              document.getElementById('settings-modal').style.display === 'block';
         if (anyModalOpen) {
           closeAllModals();
@@ -2159,173 +2600,230 @@
       return (maxX > bx && minX < bx + 1 && maxY > by && minY < by + 1 && maxZ > bz && minZ < bz + 1);
     }
 
-    window.addEventListener('mousedown', e => {
-      if (!isLocked) return;
-      if (e.target && e.target.closest && (e.target.closest('#top-actions') || e.target.closest('#hotbar') || e.target.closest('.game-panel'))) return;
+    let isLeftMouseDown = false;
+    let miningBlockKey = '';
+    let miningProgress = 0;
+    let miningTickSound = 0;
 
+    function breakBlockAt(bx, by, bz, bId) {
+      playSound(150, 50, 0.09, 'triangle', 0.22);
+      const def = BLOCK_DEFS[bId] || {};
+      const dropId = def.drop !== undefined ? def.drop : bId;
+      const dropIsBlock = !def.dropItem;
+      spawnBreakParticles(bx, by, bz, bId);
+      spawnDroppedItem(bx, by, bz, dropId, 1, dropIsBlock);
+      addPlayerXP(8);
+
+      if ([BLOCKS.WOOD_JUNIPER, BLOCKS.WOOD_POPLAR, BLOCKS.WOOD_WALNUT, BLOCKS.WOOD_WILLOW, BLOCKS.PLANKS].includes(bId)) {
+        advanceQuest('wood', 1);
+      }
+      if ([BLOCKS.STONE, BLOCKS.COBBLESTONE, BLOCKS.PAMIR_GRANITE, BLOCKS.LIMESTONE, BLOCKS.COAL_ORE, BLOCKS.IRON_ORE, BLOCKS.GOLD_ORE, BLOCKS.LAPIS_ORE, BLOCKS.RUBY_ORE].includes(bId)) {
+        advanceQuest('miner', 1);
+      }
+
+      const k = voxelKey(bx, by, bz);
+      modifiedBlocks[k] = BLOCKS.AIR;
+      forceVoxelWorld(bx, by, bz, BLOCKS.AIR);
+      applyGravityBlocksAround(bx, bz);
+      rebuildChunkAndNeighbors(bx, bz);
+      saveAllGameState();
+    }
+
+    function performPrimaryAction() {
+      initAudio();
+      swingTimer = 0.24;
+      const slot = inventorySlots[activeSlot];
+      if (targetedAnimal) {
+        const itemDef = (!slot.is_block && slot.id) ? ITEM_DEFS[slot.id] : {};
+        const dmg = itemDef.dmg || 8;
+        targetedAnimal.health -= dmg;
+        targetedAnimal.hurtTimer = 0.25;
+        const pushAngle = Math.atan2(targetedAnimal.group.position.x - player.pos.x, targetedAnimal.group.position.z - player.pos.z);
+        targetedAnimal.kbX = Math.sin(pushAngle) * 6.5;
+        targetedAnimal.kbZ = Math.cos(pushAngle) * 6.5;
+        playSound(120, 60, 0.1, 'sawtooth', 0.25);
+        showBanner(`Hit ${targetedAnimal.name} (-${dmg} HP)`);
+        if (targetedAnimal.health <= 0) {
+          if (player.mountedAnimal === targetedAnimal) player.mountedAnimal = null;
+          const ax = Math.floor(targetedAnimal.group.position.x);
+          const ay = Math.floor(targetedAnimal.group.position.y);
+          const az = Math.floor(targetedAnimal.group.position.z);
+          scene.remove(targetedAnimal.group);
+          animals.splice(animals.indexOf(targetedAnimal), 1);
+          spawnDroppedItem(ax, ay, az, ITEMS.RAW_MEAT, 2, false);
+          spawnDroppedItem(ax, ay, az, targetedAnimal.type === 'sheep' ? ITEMS.WOOL : ITEMS.LEATHER, 1, false);
+          addPlayerXP(25);
+          showBanner(`Hunted ${targetedAnimal.name}`);
+        }
+        return true;
+      }
+      if (targetedBlock && targetedBlock.id !== BLOCKS.AIR && targetedBlock.y > 0) {
+        const def = BLOCK_DEFS[targetedBlock.id] || {};
+        if (gameMode === 'creative' || def.is_plant || targetedBlock.id === BLOCKS.SNOW || targetedBlock.id === BLOCKS.GLASS) {
+          breakBlockAt(targetedBlock.x, targetedBlock.y, targetedBlock.z, targetedBlock.id);
+          miningProgress = 0;
+          return true;
+        }
+      }
+      return false;
+    }
+
+    function performSecondaryAction() {
       initAudio();
       swingTimer = 0.22;
       const slot = inventorySlots[activeSlot];
 
-      if (e.button === 0) { // LEFT CLICK: Mine Block or Hunt Animal
-        if (targetedAnimal) {
-          const itemDef = (!slot.is_block && slot.id) ? ITEM_DEFS[slot.id] : {};
-          const dmg = itemDef.dmg || 8;
-          targetedAnimal.health -= dmg;
-          playSound(120, 60, 0.1, 'sawtooth', 0.25);
-          showBanner(`Hit ${targetedAnimal.name} (-${dmg} HP)`);
-          if (targetedAnimal.health <= 0) {
-            scene.remove(targetedAnimal.group);
-            animals.splice(animals.indexOf(targetedAnimal), 1);
-            addItemToInventory(ITEMS.RAW_MEAT, 2, false);
-            addItemToInventory(targetedAnimal.type === 'sheep' ? ITEMS.WOOL : ITEMS.LEATHER, 1, false);
-            showBanner(`Hunted ${targetedAnimal.name}`);
+      if (targetedAnimal) {
+        if (targetedAnimal.type === 'merchant') {
+          advanceQuest('trader', 1);
+          if (countItemInInv(ITEMS.GOLD_INGOT) > 0 || countItemInInv(ITEMS.LAPIS_GEM) > 0) {
+            if (countItemInInv(ITEMS.GOLD_INGOT) > 0) consumeItemFromInv(ITEMS.GOLD_INGOT, 1);
+            else consumeItemFromInv(ITEMS.LAPIS_GEM, 1);
+            addItemToInventory(ITEMS.OSHI_PALOV, 2, false);
+            addItemToInventory(ITEMS.RUBY_GEM, 1, false);
+            playSound(320, 480, 0.14);
+            showBanner("Silk Road Trader exchanged gem for Oshi Palov (x2) and Pamir Ruby");
+          } else if (countItemInInv(ITEMS.WOOL) >= 2) {
+            consumeItemFromInv(ITEMS.WOOL, 2);
+            addItemToInventory(ITEMS.NON_BREAD, 3, false);
+            playSound(280, 420, 0.12);
+            showBanner("Silk Road Trader exchanged wool for Tandoor Non (x3)");
+          } else {
+            addItemToInventory(ITEMS.GREEN_TEA, 1, false);
+            playSound(260, 340, 0.10);
+            showBanner("Silk Road Trader shared warm Kok-Chai (bring Gold, Lapis, or Wool to trade)");
           }
           return;
         }
-        if (targetedBlock && targetedBlock.id !== BLOCKS.AIR && targetedBlock.y > 0) {
-          playSound(150, 50, 0.09, 'triangle', 0.22);
-          const def = BLOCK_DEFS[targetedBlock.id] || {};
-          const dropId = def.drop !== undefined ? def.drop : targetedBlock.id;
-          const dropIsBlock = !def.dropItem;
-          addItemToInventory(dropId, 1, dropIsBlock);
-          spawnBreakParticles(targetedBlock.x, targetedBlock.y, targetedBlock.z, targetedBlock.id);
+        if (targetedAnimal.type === 'horse' || targetedAnimal.type === 'yak') {
+          if (player.mountedAnimal === targetedAnimal) {
+            player.mountedAnimal = null;
+            showBanner(`Dismounted ${targetedAnimal.name}`);
+          } else {
+            player.mountedAnimal = targetedAnimal;
+            player.pos.set(targetedAnimal.group.position.x, targetedAnimal.group.position.y, targetedAnimal.group.position.z);
+            advanceQuest('rider', 1);
+            showBanner(`Mounted ${targetedAnimal.name} · Press Ctrl or C to dismount`);
+          }
+          return;
+        }
+        if (targetedAnimal.cooldown <= 0) {
+          targetedAnimal.cooldown = 12;
+          if (targetedAnimal.type === 'sheep') {
+            addItemToInventory(ITEMS.WOOL, 2, false);
+            showBanner("Sheared Marco Polo Sheep wool (+2)");
+          } else if (targetedAnimal.type === 'cow') {
+            addItemToInventory(ITEMS.MILK_BOWL, 1, false);
+            showBanner("Milked fresh mountain milk (+1)");
+          }
+        }
+        return;
+      }
 
+      if (targetedBlock) {
+        if (targetedBlock.id === BLOCKS.WORKBENCH) { toggleInventory('crafting_table'); return; }
+        if (targetedBlock.id === BLOCKS.TANDOOR) { advanceQuest('baker', 1); toggleInventory('tandoor'); return; }
+        if (targetedBlock.id === BLOCKS.BED) {
+          gameHours = 7.5; player.health = 100;
+          player.spawn.set(targetedBlock.x + 0.5, targetedBlock.y + 1.001, targetedBlock.z + 0.5);
+          showBanner("Rested in Tochak Bed — morning arrived and spawn set");
+          return;
+        }
+        if (targetedBlock.id === BLOCKS.CHEST) {
+          advanceQuest('trader', 1);
+          const ck = voxelKey(targetedBlock.x, targetedBlock.y, targetedBlock.z);
+          if (!lootedChests.has(ck)) {
+            lootedChests.add(ck);
+            addItemToInventory(ITEMS.DRIED_APRICOTS, 3, false);
+            addItemToInventory(ITEMS.LAPIS_GEM, 1, false);
+            addItemToInventory(ITEMS.RUBY_GEM, 1, false);
+            addItemToInventory(ITEMS.NON_BREAD, 2, false);
+            showBanner("Found Pamir Ruby, Badakhshan Lapis, and provisions in Sanduq Chest");
+          } else {
+            addItemToInventory(ITEMS.DRIED_APRICOTS, 1, false);
+            showBanner("Collected trail rations from Sanduq Chest");
+          }
+          return;
+        }
+      }
+
+      if (slot && !slot.is_block && slot.id) {
+        const it = ITEM_DEFS[slot.id] || {};
+        if (it.is_instrument) { advanceQuest('music', 1); playDutarStrum(); return; }
+        if (it.is_hoe && targetedBlock && [BLOCKS.GRASS, BLOCKS.DIRT, BLOCKS.LOESS_SOIL, BLOCKS.SNOW_GRASS].includes(targetedBlock.id)) {
           const k = voxelKey(targetedBlock.x, targetedBlock.y, targetedBlock.z);
-          modifiedBlocks[k] = BLOCKS.AIR;
-          forceVoxelWorld(targetedBlock.x, targetedBlock.y, targetedBlock.z, BLOCKS.AIR);
+          modifiedBlocks[k] = BLOCKS.FARMLAND;
+          forceVoxelWorld(targetedBlock.x, targetedBlock.y, targetedBlock.z, BLOCKS.FARMLAND);
           rebuildChunkAndNeighbors(targetedBlock.x, targetedBlock.z);
+          playSound(120, 90, 0.08);
+          showBanner("Tilled Farmland (Замини кишт)");
+          return;
+        }
+        if (it.is_seed && targetedBlock && targetedBlock.id === BLOCKS.FARMLAND) {
+          const crop = slot.id === ITEMS.WHEAT_SEEDS ? BLOCKS.WHEAT : BLOCKS.COTTON;
+          const k = voxelKey(targetedBlock.x, targetedBlock.y + 1, targetedBlock.z);
+          modifiedBlocks[k] = crop;
+          forceVoxelWorld(targetedBlock.x, targetedBlock.y + 1, targetedBlock.z, crop);
+          rebuildChunkAndNeighbors(targetedBlock.x, targetedBlock.z);
+          slot.count--; if (slot.count <= 0) inventorySlots[activeSlot] = { id: 0, count: 0, is_block: false };
+          renderHotbar();
+          return;
+        }
+        if (slot.id === ITEMS.FISHING_ROD && player.inWater) {
+          addItemToInventory(ITEMS.RAW_TROUT, 1, false);
+          playSound(300, 500, 0.15);
+          showBanner("Caught a Mountain Trout (Гулмоҳӣ)");
+          return;
+        }
+        if (it.is_food) {
+          player.hunger = Math.min(100, player.hunger + it.heal);
+          player.health = Math.min(100, player.health + it.heal * 0.25);
+          player.temp = Math.min(37.5, player.temp + it.warm * 0.3);
+          if ([ITEMS.NON_BREAD, ITEMS.FATIR, ITEMS.SAMBUSA].includes(slot.id)) advanceQuest('baker', 1);
+          slot.count--; if (slot.count <= 0) inventorySlots[activeSlot] = { id: 0, count: 0, is_block: false };
+          playSound(280, 340, 0.1);
+          showBanner(`Ate ${it.name} (+${it.heal} Hunger)`);
+          renderHotbar();
+          return;
+        }
+      }
+
+      if (slot && slot.is_block && slot.id && targetedBlock) {
+        const px = targetedBlock.x + targetedBlock.normal[0];
+        const py = targetedBlock.y + targetedBlock.normal[1];
+        const pz = targetedBlock.z + targetedBlock.normal[2];
+        if (py > 0 && py < CHUNK_HEIGHT - 1 && !playerIntersectsVoxel(px, py, pz)) {
+          const k = voxelKey(px, py, pz);
+          modifiedBlocks[k] = slot.id;
+          forceVoxelWorld(px, py, pz, slot.id);
+          if (gameMode !== 'creative') {
+            slot.count--; if (slot.count <= 0) inventorySlots[activeSlot] = { id: 0, count: 0, is_block: false };
+          }
+          playSound(210, 140, 0.08);
+          applyGravityBlocksAround(px, pz);
+          rebuildChunkAndNeighbors(px, pz);
+          renderHotbar();
           saveAllGameState();
         }
-      } else if (e.button === 2) { // RIGHT CLICK: Workstations, Animals, Mounts, Trader, Farming, Fishing, Eat, Place
-        if (targetedAnimal) {
-          if (targetedAnimal.type === 'merchant') {
-            if (countItemInInv(ITEMS.GOLD_INGOT) > 0 || countItemInInv(ITEMS.LAPIS_GEM) > 0) {
-              if (countItemInInv(ITEMS.GOLD_INGOT) > 0) consumeItemFromInv(ITEMS.GOLD_INGOT, 1);
-              else consumeItemFromInv(ITEMS.LAPIS_GEM, 1);
-              addItemToInventory(ITEMS.OSHI_PALOV, 2, false);
-              addItemToInventory(ITEMS.RUBY_GEM, 1, false);
-              playSound(320, 480, 0.14);
-              showBanner("Silk Road Trader exchanged gem for Oshi Palov (x2) and Pamir Ruby");
-            } else if (countItemInInv(ITEMS.WOOL) >= 2) {
-              consumeItemFromInv(ITEMS.WOOL, 2);
-              addItemToInventory(ITEMS.NON_BREAD, 3, false);
-              playSound(280, 420, 0.12);
-              showBanner("Silk Road Trader exchanged wool for Tandoor Non (x3)");
-            } else {
-              addItemToInventory(ITEMS.GREEN_TEA, 1, false);
-              playSound(260, 340, 0.10);
-              showBanner("Silk Road Trader shared warm Kok-Chai (bring Gold, Lapis, or Wool to trade)");
-            }
-            return;
-          }
-          if (targetedAnimal.type === 'horse' || targetedAnimal.type === 'yak') {
-            if (player.mountedAnimal === targetedAnimal) {
-              player.mountedAnimal = null;
-              showBanner(`Dismounted ${targetedAnimal.name}`);
-            } else {
-              player.mountedAnimal = targetedAnimal;
-              player.pos.set(targetedAnimal.group.position.x, targetedAnimal.group.position.y, targetedAnimal.group.position.z);
-              showBanner(`Mounted ${targetedAnimal.name} · Press Ctrl or C to dismount`);
-            }
-            return;
-          }
-          if (targetedAnimal.cooldown <= 0) {
-            targetedAnimal.cooldown = 12;
-            if (targetedAnimal.type === 'sheep') {
-              addItemToInventory(ITEMS.WOOL, 2, false);
-              showBanner("Sheared Marco Polo Sheep wool (+2)");
-            } else if (targetedAnimal.type === 'cow') {
-              addItemToInventory(ITEMS.MILK_BOWL, 1, false);
-              showBanner("Milked fresh mountain milk (+1)");
-            }
-          }
-          return;
-        }
+      }
+    }
 
-        if (targetedBlock) {
-          if (targetedBlock.id === BLOCKS.WORKBENCH) { toggleInventory('crafting_table'); return; }
-          if (targetedBlock.id === BLOCKS.TANDOOR) { toggleInventory('tandoor'); return; }
-          if (targetedBlock.id === BLOCKS.BED) {
-            gameHours = 7.5; player.health = 100;
-            player.spawn.set(targetedBlock.x + 0.5, targetedBlock.y + 1.001, targetedBlock.z + 0.5);
-            showBanner("Rested in Tochak Bed — morning arrived and spawn set");
-            return;
-          }
-          if (targetedBlock.id === BLOCKS.CHEST) {
-            const ck = voxelKey(targetedBlock.x, targetedBlock.y, targetedBlock.z);
-            if (!lootedChests.has(ck)) {
-              lootedChests.add(ck);
-              addItemToInventory(ITEMS.DRIED_APRICOTS, 3, false);
-              addItemToInventory(ITEMS.LAPIS_GEM, 1, false);
-              addItemToInventory(ITEMS.RUBY_GEM, 1, false);
-              addItemToInventory(ITEMS.NON_BREAD, 2, false);
-              showBanner("Found Pamir Ruby, Badakhshan Lapis, and provisions in Sanduq Chest");
-            } else {
-              addItemToInventory(ITEMS.DRIED_APRICOTS, 1, false);
-              showBanner("Collected trail rations from Sanduq Chest");
-            }
-            return;
-          }
-        }
-
-        if (slot && !slot.is_block && slot.id) {
-          const it = ITEM_DEFS[slot.id] || {};
-          if (it.is_instrument) { playDutarStrum(); return; }
-          if (it.is_hoe && targetedBlock && [BLOCKS.GRASS, BLOCKS.DIRT, BLOCKS.LOESS_SOIL, BLOCKS.SNOW_GRASS].includes(targetedBlock.id)) {
-            const k = voxelKey(targetedBlock.x, targetedBlock.y, targetedBlock.z);
-            modifiedBlocks[k] = BLOCKS.FARMLAND;
-            forceVoxelWorld(targetedBlock.x, targetedBlock.y, targetedBlock.z, BLOCKS.FARMLAND);
-            rebuildChunkAndNeighbors(targetedBlock.x, targetedBlock.z);
-            playSound(120, 90, 0.08);
-            showBanner("Tilled Farmland (Замини кишт)");
-            return;
-          }
-          if (it.is_seed && targetedBlock && targetedBlock.id === BLOCKS.FARMLAND) {
-            const crop = slot.id === ITEMS.WHEAT_SEEDS ? BLOCKS.WHEAT : BLOCKS.COTTON;
-            const k = voxelKey(targetedBlock.x, targetedBlock.y + 1, targetedBlock.z);
-            modifiedBlocks[k] = crop;
-            forceVoxelWorld(targetedBlock.x, targetedBlock.y + 1, targetedBlock.z, crop);
-            rebuildChunkAndNeighbors(targetedBlock.x, targetedBlock.z);
-            slot.count--; if (slot.count <= 0) inventorySlots[activeSlot] = { id: 0, count: 0, is_block: false };
-            renderHotbar();
-            return;
-          }
-          if (slot.id === ITEMS.FISHING_ROD && player.inWater) {
-            addItemToInventory(ITEMS.RAW_TROUT, 1, false);
-            playSound(300, 500, 0.15);
-            showBanner("Caught a Mountain Trout (Гулмоҳӣ)");
-            return;
-          }
-          if (it.is_food) {
-            player.hunger = Math.min(100, player.hunger + it.heal);
-            player.health = Math.min(100, player.health + it.heal * 0.25);
-            player.temp = Math.min(37.5, player.temp + it.warm * 0.3);
-            slot.count--; if (slot.count <= 0) inventorySlots[activeSlot] = { id: 0, count: 0, is_block: false };
-            playSound(280, 340, 0.1);
-            showBanner(`Ate ${it.name} (+${it.heal} Hunger)`);
-            renderHotbar();
-            return;
-          }
-        }
-
-        if (slot && slot.is_block && slot.id && targetedBlock) {
-          const px = targetedBlock.x + targetedBlock.normal[0];
-          const py = targetedBlock.y + targetedBlock.normal[1];
-          const pz = targetedBlock.z + targetedBlock.normal[2];
-          if (py > 0 && py < CHUNK_HEIGHT - 1 && !playerIntersectsVoxel(px, py, pz)) {
-            const k = voxelKey(px, py, pz);
-            modifiedBlocks[k] = slot.id;
-            forceVoxelWorld(px, py, pz, slot.id);
-            if (gameMode !== 'creative') {
-              slot.count--; if (slot.count <= 0) inventorySlots[activeSlot] = { id: 0, count: 0, is_block: false };
-            }
-            playSound(210, 140, 0.08);
-            rebuildChunkAndNeighbors(px, pz);
-            renderHotbar();
-            saveAllGameState();
-          }
-        }
+    window.addEventListener('mousedown', e => {
+      if (!isLocked) return;
+      if (e.target && e.target.closest && (e.target.closest('#top-actions') || e.target.closest('#hotbar') || e.target.closest('.game-panel') || e.target.closest('#quest-tracker') || e.target.closest('#touch-controls'))) return;
+      if (e.button === 0) {
+        isLeftMouseDown = true;
+        performPrimaryAction();
+      } else if (e.button === 2) {
+        performSecondaryAction();
+      }
+    });
+    window.addEventListener('mouseup', e => {
+      if (e.button === 0) {
+        isLeftMouseDown = false;
+        miningProgress = 0;
+        crackBoxMesh.visible = false;
+        document.getElementById('mining-bar-wrap').style.display = 'none';
       }
     });
 
@@ -2493,6 +2991,72 @@
         }
       }
 
+      // Update 3D Dropped Item Entities (gravity, bounce, spin, magnetic pickup)
+      for (let i = droppedItems.length - 1; i >= 0; i--) {
+        const d = droppedItems[i];
+        d.age += delta;
+        d.vy -= 16 * delta;
+        d.mesh.position.x += d.vx * delta;
+        d.mesh.position.y += d.vy * delta;
+        d.mesh.position.z += d.vz * delta;
+        const groundY = getTerrainElevation(Math.floor(d.mesh.position.x), Math.floor(d.mesh.position.z)) + 1.22;
+        if (d.mesh.position.y < groundY) {
+          d.mesh.position.y = groundY;
+          d.vy = Math.abs(d.vy) * 0.35;
+          d.vx *= 0.65;
+          d.vz *= 0.65;
+        }
+        d.mesh.rotation.y += 2.6 * delta;
+        const distToP = Math.hypot(d.mesh.position.x - player.pos.x, d.mesh.position.z - player.pos.z);
+        if (distToP < 2.6 || d.age > 2.2) {
+          d.mesh.position.lerp(new THREE.Vector3(player.pos.x, player.pos.y + 1.0, player.pos.z), 12 * delta);
+          if (distToP < 1.35 || d.age > 2.5) {
+            addItemToInventory(d.id, d.count, d.is_block);
+            playSound(380, 620, 0.07, 'sine', 0.18);
+            scene.remove(d.mesh);
+            d.mesh.geometry.dispose();
+            droppedItems.splice(i, 1);
+          }
+        }
+      }
+
+      // Progressive Hold-to-Mine Block Cracking
+      if (isLocked && isLeftMouseDown && targetedBlock && targetedBlock.id !== BLOCKS.AIR && targetedBlock.y > 0) {
+        const curKey = voxelKey(targetedBlock.x, targetedBlock.y, targetedBlock.z);
+        if (curKey !== miningBlockKey) {
+          miningBlockKey = curKey;
+          miningProgress = 0;
+        }
+        const slot = inventorySlots[activeSlot] || {};
+        const toolDef = (!slot.is_block && slot.id) ? (ITEM_DEFS[slot.id] || {}) : {};
+        const power = toolDef.power || 1.4;
+        const isHard = [BLOCKS.STONE, BLOCKS.PAMIR_GRANITE, BLOCKS.LIMESTONE, BLOCKS.SLATE, BLOCKS.COAL_ORE, BLOCKS.IRON_ORE, BLOCKS.GOLD_ORE, BLOCKS.LAPIS_ORE, BLOCKS.RUBY_ORE].includes(targetedBlock.id);
+        const speedMult = power / (isHard ? 1.35 : 0.65);
+        miningProgress += delta * speedMult * 2.2;
+        swingTimer = 0.22;
+        miningTickSound -= delta;
+        if (miningTickSound <= 0) {
+          miningTickSound = 0.18;
+          playSound(180, 110, 0.05, 'triangle', 0.12);
+          spawnBreakParticles(targetedBlock.x, targetedBlock.y, targetedBlock.z, targetedBlock.id);
+        }
+        crackBoxMesh.position.set(targetedBlock.x + 0.5, targetedBlock.y + 0.5, targetedBlock.z + 0.5);
+        crackBoxMesh.visible = true;
+        crackBoxMat.opacity = Math.min(0.85, miningProgress * 0.85);
+        document.getElementById('mining-bar-wrap').style.display = 'block';
+        document.getElementById('mining-bar-fill').style.width = `${Math.min(100, miningProgress * 100)}%`;
+        if (miningProgress >= 1.0) {
+          breakBlockAt(targetedBlock.x, targetedBlock.y, targetedBlock.z, targetedBlock.id);
+          miningProgress = 0;
+          crackBoxMesh.visible = false;
+          document.getElementById('mining-bar-wrap').style.display = 'none';
+        }
+      } else {
+        miningProgress = 0;
+        crackBoxMesh.visible = false;
+        document.getElementById('mining-bar-wrap').style.display = 'none';
+      }
+
       // Keyboard Look Support (Arrows & Q/E)
       if (isLocked) {
         const lookSpeed = 1.8 * delta;
@@ -2520,6 +3084,10 @@
       if (keys['KeyS']) move.z += 1;
       if (keys['KeyA']) move.x -= 1;
       if (keys['KeyD']) move.x += 1;
+      if (Math.hypot(touchJoyX, touchJoyY) > 0.08) {
+        move.x += touchJoyX;
+        move.z += touchJoyY;
+      }
 
       if (isLocked && move.length() > 0 && player.health > 0) {
         move.normalize();
@@ -2604,12 +3172,21 @@
       playerTorchLight.position.set(player.pos.x, player.pos.y + 1.5, player.pos.z);
       playerTorchLight.intensity = holdingTorch ? 1.25 : 0.0;
       if (avatarLegL && avatarLegR) {
-        const walkMag = Math.min(1, Math.hypot(player.vel.x, player.vel.z) / 4.8);
-        const legSwing = Math.sin(now * 0.012) * 0.55 * walkMag;
+        const walkMag = Math.min(1.3, Math.hypot(player.vel.x, player.vel.z) / 4.8);
+        const legSwing = Math.sin(now * 0.012) * 0.65 * walkMag;
+        if (avatarHeadPivot) avatarHeadPivot.rotation.x = -player.pitch * 0.65;
+        if (avatarTorso) avatarTorso.rotation.x = player.crouch ? 0.32 : 0;
         avatarLegL.rotation.x = legSwing;
         avatarLegR.rotation.x = -legSwing;
-        avatarArmL.rotation.x = -legSwing * 0.8;
-        avatarArmR.rotation.x = legSwing * 0.8;
+        avatarArmL.rotation.x = -legSwing * 0.85;
+        if (swingTimer > 0) {
+          const swingProg = Math.sin((1 - swingTimer / 0.24) * Math.PI);
+          avatarArmR.rotation.x = -1.1 - swingProg * 1.4;
+          avatarArmR.rotation.z = -swingProg * 0.25;
+        } else {
+          avatarArmR.rotation.x = legSwing * 0.85;
+          avatarArmR.rotation.z = 0;
+        }
       }
 
       if (!player.thirdPerson) {
@@ -2726,9 +3303,25 @@
         }
       }
 
-      // Animal AI Update
+      // Animal AI Update + Knockback Physics
       animals.forEach(anim => {
         if (anim.cooldown > 0) anim.cooldown -= delta;
+        if (anim.hurtTimer > 0) {
+          anim.hurtTimer -= delta;
+          anim.group.position.y = getTerrainElevation(anim.group.position.x, anim.group.position.z) + 1.0 + Math.sin(anim.hurtTimer * Math.PI * 4) * 0.35;
+        }
+        if (Math.hypot(anim.kbX || 0, anim.kbZ || 0) > 0.1) {
+          const kx = anim.group.position.x + anim.kbX * delta;
+          const kz = anim.group.position.z + anim.kbZ * delta;
+          const ky = getTerrainElevation(kx, kz) + 1.0;
+          if (!isSolidAt(kx, ky + 0.5, kz)) {
+            anim.group.position.x = kx;
+            anim.group.position.z = kz;
+            anim.group.position.y = ky;
+          }
+          anim.kbX *= 0.82;
+          anim.kbZ *= 0.82;
+        }
         if (player.mountedAnimal === anim) {
           const walkMag = Math.min(1, Math.hypot(player.vel.x, player.vel.z) / 7.5);
           const swing = Math.sin(now * 0.014) * 0.5 * walkMag;
@@ -2781,6 +3374,104 @@
       renderer.render(scene, camera);
     }
 
+    // --- MOBILE TOUCH CONTROLS (GOOGLE PLAY STORE) & YANDEX GAMES SDK ---
+    let touchJoyX = 0, touchJoyY = 0;
+    let touchEnabled = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+    if (touchEnabled) {
+      document.getElementById('touch-controls').style.display = 'block';
+    }
+    window.toggleTouchUI = function() {
+      const tc = document.getElementById('touch-controls');
+      const vis = tc.style.display === 'block';
+      tc.style.display = vis ? 'none' : 'block';
+      if (!vis) {
+        isLocked = true;
+        document.getElementById('click-blocker').style.display = 'none';
+      }
+      showBanner(vis ? "Touch controls hidden" : "Touch controls enabled");
+    };
+
+    (function setupTouchControls() {
+      const zone = document.getElementById('joystick-zone');
+      const knob = document.getElementById('joystick-knob');
+      let joyId = null;
+      function updateKnob(clientX, clientY) {
+        const rect = zone.getBoundingClientRect();
+        const cx = rect.left + rect.width / 2;
+        const cy = rect.top + rect.height / 2;
+        let dx = clientX - cx;
+        let dy = clientY - cy;
+        const maxR = 42;
+        const dist = Math.hypot(dx, dy);
+        if (dist > maxR) { dx = (dx / dist) * maxR; dy = (dy / dist) * maxR; }
+        knob.style.transform = `translate(${dx}px, ${dy}px)`;
+        touchJoyX = dx / maxR;
+        touchJoyY = dy / maxR;
+      }
+      zone.addEventListener('pointerdown', e => {
+        e.stopPropagation();
+        joyId = e.pointerId;
+        zone.setPointerCapture(joyId);
+        isLocked = true;
+        document.getElementById('click-blocker').style.display = 'none';
+        updateKnob(e.clientX, e.clientY);
+      });
+      zone.addEventListener('pointermove', e => {
+        if (e.pointerId === joyId) updateKnob(e.clientX, e.clientY);
+      });
+      const resetJoy = e => {
+        if (e.pointerId === joyId) {
+          joyId = null;
+          knob.style.transform = 'translate(0px, 0px)';
+          touchJoyX = 0; touchJoyY = 0;
+        }
+      };
+      zone.addEventListener('pointerup', resetJoy);
+      zone.addEventListener('pointercancel', resetJoy);
+
+      const bindTouchBtn = (id, onDown, onUp) => {
+        const b = document.getElementById(id);
+        if (!b) return;
+        b.addEventListener('pointerdown', e => { e.stopPropagation(); isLocked = true; document.getElementById('click-blocker').style.display = 'none'; onDown(); });
+        if (onUp) {
+          b.addEventListener('pointerup', e => { e.stopPropagation(); onUp(); });
+          b.addEventListener('pointercancel', e => { e.stopPropagation(); onUp(); });
+        }
+      };
+      bindTouchBtn('tbtn-jump', () => { keys['Space'] = true; }, () => { keys['Space'] = false; });
+      bindTouchBtn('tbtn-mine', () => { isLeftMouseDown = true; performPrimaryAction(); }, () => { isLeftMouseDown = false; });
+      bindTouchBtn('tbtn-use', () => { performSecondaryAction(); });
+      bindTouchBtn('tbtn-cam', () => {
+        player.thirdPerson = !player.thirdPerson;
+        explorerAvatar.visible = player.thirdPerson;
+        showBanner(player.thirdPerson ? "3rd-Person Tajik Explorer View" : "1st-Person View");
+      });
+    })();
+
+    // Yandex Games SDK Auto-Initialization & Visibility Audio Pause Compliance
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden && audioCtx && audioCtx.state === 'running') {
+        audioCtx.suspend().catch(() => {});
+      } else if (!document.hidden && audioCtx && audioCtx.state === 'suspended' && isLocked) {
+        audioCtx.resume().catch(() => {});
+      }
+    });
+
+    if (typeof window.YaGames !== 'undefined') {
+      window.YaGames.init().then(ysdk => {
+        window.ysdk = ysdk;
+        if (ysdk.features && ysdk.features.LoadingAPI) {
+          ysdk.features.LoadingAPI.ready();
+        }
+        const yLang = (ysdk.environment && ysdk.environment.i18n && ysdk.environment.i18n.lang) || '';
+        if (yLang === 'ru' && langIdx !== 2) {
+          langIdx = 1;
+          window.toggleLanguage();
+        }
+      }).catch(() => {});
+    }
+
+    updateQuestTrackerHUD();
     animate();
     window.addEventListener('resize', () => {
       camera.aspect = window.innerWidth / window.innerHeight;

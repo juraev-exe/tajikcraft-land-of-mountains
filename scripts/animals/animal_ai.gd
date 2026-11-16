@@ -178,9 +178,9 @@ func _construct_3d_voxel_model() -> void:
 			coat_tile = 139
 			body_size = Vector3(0.3, 0.35, 0.4)
 		AnimalType.SILK_ROAD_MERCHANT:
-			coat_tile = 115 # Quilted Chapan tunic
-			body_size = Vector3(0.55, 0.75, 0.32)
-			head_size = Vector3(0.42, 0.42, 0.42)
+			coat_tile = 36 # Full-bleed embroidered Suzani tunic fabric (opaque)
+			body_size = Vector3(0.50, 0.75, 0.28)
+			head_size = Vector3(0.46, 0.46, 0.46)
 			move_speed = 1.2
 
 	# Main Torso (Textured!)
@@ -396,6 +396,12 @@ func take_damage(amount: float) -> void:
 	health -= amount
 	current_state = State.FLEE
 	state_timer = 5.0
+	var player = GameManager.player_node
+	if player and player is Node3D:
+		var push_dir: Vector3 = (global_position - player.global_position).normalized()
+		velocity.x = push_dir.x * 6.5
+		velocity.z = push_dir.z * 6.5
+		velocity.y = 4.2
 	if health <= 0.0:
 		die()
 
